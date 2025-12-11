@@ -41,5 +41,4 @@ INVAR
     !(x = 8 & y = 6 & !(x_blow = 8 & y_blow = 6)) & 
     !(x = 9 & y = 1 & !(x_blow = 9 & y_blow = 1))
 HLTLSPEC
---    forall A. G !(x[A] = 7 & y[A] = 5)
     forall A. exists B. !((F (x[A] = 7 & y[A] = 5)) & (G ((x[B] = 7 & y[B] = 5) -> (x[A] = 7 & y[A] = 5))))
