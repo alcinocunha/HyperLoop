@@ -1091,6 +1091,8 @@ if __name__ == "__main__":
                 return smv_next_expr_to_z3(module.trans_expr, s1, s2)
 
             def invar(s):
+                if module.invar_expr is None:
+                    return BoolVal(True)
                 return smv_expr_to_z3(module.invar_expr, s)
 
             def behavior(state,loop,init,trans,invar):
