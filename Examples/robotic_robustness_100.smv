@@ -1,0 +1,21 @@
+MODULE main
+VAR
+    x_axis: 0..9;
+    y_axis: 0..9;
+    act: 1..4; -- 1:up, 2:down, 3:left, 4:right
+INIT
+    x_axis < 3 & y_axis = 0
+TRANS
+    (act = 1 & y_axis < 9 & next(x_axis) = x_axis & next(y_axis) = y_axis + 1) |
+    (act = 2 & y_axis > 0 & next(x_axis) = x_axis & next(y_axis) = y_axis - 1) |
+    (act = 3 & x_axis > 0 & next(x_axis) = x_axis - 1 & next(y_axis) = y_axis) |
+    (act = 4 & x_axis < 9 & next(x_axis) = x_axis + 1 & next(y_axis) = y_axis)
+INVAR
+    (y_axis = 4 + x_axis -> (act = 2 | act = 4)) & 
+    (x_axis = 4 + y_axis -> (act = 1 | act = 3)) &
+    (x_axis = 0 -> (act = 1 | act = 2 | act = 4)) &
+    (x_axis = 9 -> (act = 1 | act = 2 | act = 3)) &
+    (y_axis = 0 -> (act = 1 | act = 3 | act = 4)) &
+    (y_axis = 9 -> (act = 2 | act = 3 | act = 4))
+HLTLSPEC
+    forall A. exists B. !(F ((x_axis[A] = 6 | x_axis[A] = 7 | x_axis[A] = 8) & y_axis[A] = 9) & (G (act[A] = act[B]) -> F ((x_axis[B] = 6 | x_axis[B] = 7 | x_axis[B] = 8) & y_axis[B] = 9)))
