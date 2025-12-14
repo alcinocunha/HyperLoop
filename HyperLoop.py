@@ -1053,7 +1053,7 @@ def smv_next_expr_to_z3(expr: ASTNode, state1: dict, state2: dict) -> ExprRef:
 if __name__ == "__main__":
     # check command line arguments
     if len(sys.argv) != 3:
-        print("Usage: python bmc.py <model_file.smv> <trace_length>")
+        print("Usage: python HyperLoop.py <model_file.smv> <trace_length>")
         sys.exit(1)
     model_file = sys.argv[1]
     K = int(sys.argv[2])
