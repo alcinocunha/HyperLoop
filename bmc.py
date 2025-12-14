@@ -1085,9 +1085,13 @@ if __name__ == "__main__":
                 return decls
             
             def init(s):
+                if module.init_expr is None:
+                    return BoolVal(True)
                 return smv_expr_to_z3(module.init_expr, s,)
             
             def trans(s1,s2):
+                if module.trans_expr is None:
+                    return BoolVal(True)
                 return smv_next_expr_to_z3(module.trans_expr, s1, s2)
 
             def invar(s):
