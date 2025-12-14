@@ -1,0 +1,15 @@
+-- From HyperQB 2.0 examples
+MODULE main
+VAR
+  HIGH: 0..15;
+  LOW: 0..15;
+  PC: 1..4;
+INIT
+  PC = 1 & HIGH = 0 & LOW = 0
+TRANS
+  (PC = 1 & next(PC) = 2 & next(HIGH) = HIGH & next(LOW) = LOW) |
+  (PC = 2 & next(PC) = 3 & next(LOW) = LOW) |
+  (PC = 3 & next(PC) = 4 & next(HIGH) = HIGH & (HIGH > 7 & next(LOW) = HIGH | HIGH <= 7 & next(LOW) = LOW)) |
+  (PC = 4 & next(PC) = 4 & next(HIGH) = HIGH & next(LOW) = LOW)
+HLTLSPEC
+  forall A. exists B. G (!(HIGH[A] = HIGH[B])) & G (LOW[A] = LOW[B])
