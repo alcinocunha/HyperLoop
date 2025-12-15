@@ -1,0 +1,8 @@
+MODULE main
+VAR
+    a_state : 1..9;
+INIT
+    a_state = 1
+TRANS
+    (a_state < 9 & next(a_state) = a_state + 1) |
+    (a_state = 9 & next(a_state) = 9)
