@@ -1,5 +1,4 @@
 -- Again, model is slightly different from the one in HyperQB...
--- Property also, this one is based on the original paper, but removing the unnecessary restriction that A is not a mutation, A is just needed to get the input action sequence.
 MODULE main
 FROZENVAR
     mutation: boolean;
@@ -15,6 +14,3 @@ TRANS
     (action = 1 & water = 0 & next(beverage) = 0 & next(water) = water) |
     (action = 2 & water = 0 & next(beverage) = 0 & (!mutation & next(water) = 3 | mutation & next(water) < 3)) |
     (action = 2 & water > 0 & next(beverage) = 0 & next(water) = water)
-HLTLSPEC
-    -- Definitely killed
-    forall A . exists B . exists C . !((mutation[B] & !mutation[C] & G (action[A] = action[B] & action[A] = action[C])) -> F (beverage[B] != beverage[C]))

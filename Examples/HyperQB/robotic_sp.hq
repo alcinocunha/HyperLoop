@@ -1,0 +1,1 @@
+Forall A. Exists B. !((F (x_axis[A] = 7 & y_axis[A] = 5)) & (G ((x_axis[B] = 7 & y_axis[B] = 5) -> (x_axis[A] = 7 & y_axis[A] = 5))))

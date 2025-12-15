@@ -38,5 +38,3 @@ INVAR
     !(x_axis = 8 & y_axis = 5) & 
     !(x_axis = 8 & y_axis = 6) & 
     !(x_axis = 9 & y_axis = 1)
-HLTLSPEC
-    forall A. exists B. !((F (x_axis[A] = 7 & y_axis[A] = 5)) & (G ((x_axis[B] = 7 & y_axis[B] = 5) -> (x_axis[A] = 7 & y_axis[A] = 5))))

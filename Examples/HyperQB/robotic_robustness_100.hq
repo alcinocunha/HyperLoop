@@ -1,0 +1,1 @@
+Forall A. Exists B. !(F ((x_axis[A] = 6 | x_axis[A] = 7 | x_axis[A] = 8) & y_axis[A] = 9) & (G (act[A] = act[B]) -> F ((x_axis[B] = 6 | x_axis[B] = 7 | x_axis[B] = 8) & y_axis[B] = 9)))

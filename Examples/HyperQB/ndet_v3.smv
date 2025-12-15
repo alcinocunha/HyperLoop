@@ -11,5 +11,3 @@ TRANS
   (PC = 2 & next(PC) = 3 & next(LOW) = LOW) |
   (PC = 3 & next(PC) = 4 & next(HIGH) = HIGH & (HIGH > 7 & next(LOW) = HIGH | HIGH <= 7 & next(LOW) = LOW)) |
   (PC = 4 & next(PC) = 4 & next(HIGH) = HIGH & next(LOW) = LOW)
-HLTLSPEC
-  forall A. exists B. G (!(HIGH[A] = HIGH[B])) & G (LOW[A] = LOW[B])

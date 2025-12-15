@@ -1,0 +1,2 @@
+-- Property different from HyperQB, this one is based on the original paper, but removing the unnecessary restriction that A is not a mutation, A is just needed to get the input action sequence.
+Forall A . Exists B . Exists C . !((mutation[B] & !mutation[C] & G (action[A] = action[B] & action[A] = action[C])) -> F (beverage[B] != beverage[C]))

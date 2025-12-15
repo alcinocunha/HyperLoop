@@ -1,20 +1,12 @@
 """
-(Complete) Bounded Model Checker for HyperLTL specifications over SMV models
+SMV Parser (by Claude Opus 4.5 adapted by Alcino Cunha)
+Supports:  MODULE, VAR, FROZENVAR, INIT, TRANS, INVAR, and HLTLSPEC sections.
 """
-
 
 from dataclasses import dataclass, field
 from typing import Optional
 from enum import Enum, auto
-from z3 import *
-import itertools
-from math import lcm
-import sys
 
-"""
-SMV Parser (by Claude Opus 4.5 adapted by Alcino Cunha)
-Supports:  MODULE, VAR, FROZENVAR, INIT, TRANS, INVAR, and HLTLSPEC sections.
-"""
 
 # ============================================================================
 # AST Node Definitions
@@ -170,7 +162,7 @@ class VarDecl(ASTNode):
 
 @dataclass
 class QuantifiedExpr(ASTNode):
-    quantifiers: list  # sequence of 'forall' or 'exists'
+    quantifiers: list  # sequence of 'Forall' or 'Exists'
     vars: list
     expr: ASTNode
     
@@ -191,8 +183,6 @@ class Module(ASTNode):
     init_expr: Optional[ASTNode] = None
     trans_expr: Optional[ASTNode] = None
     invar_expr: Optional[ASTNode] = None
-    hltl_expr: ASTNode = None
-    define_decls: list = field(default_factory=list)
     
     def __init__(self, name:  str):
         super().__init__(NodeType.MODULE)
@@ -202,8 +192,6 @@ class Module(ASTNode):
         self.init_expr = None
         self.trans_expr = None
         self.invar_expr = None
-        self.hltl_expr = None
-        self.define_decls = []
     
     def __repr__(self):
         parts = [f"MODULE {self.name}"]
@@ -221,8 +209,6 @@ class Module(ASTNode):
             parts.append(f"TRANS\n    {self. trans_expr}")
         if self.invar_expr:
             parts.append(f"INVAR\n    {self.invar_expr}")
-        if self.hltl_expr:
-            parts.append(f"HLTLSPEC\n    {self.hltl_expr}")
         return "\n".join(parts)
 
 # ============================================================================
@@ -287,8 +273,8 @@ class TokenType(Enum):
     EVENTUALLY = auto()  # F
 
     # Trace quantifiers
-    FORALL = auto()      # forall
-    EXISTS = auto()      # exists
+    FORALL = auto()      # Forall
+    EXISTS = auto()      # Exists
 
     # Special
     EOF = auto()
@@ -320,8 +306,8 @@ class Tokenizer:
         'FALSE': TokenType.FALSE,
         'boolean': TokenType.BOOLEAN,
         'mod': TokenType.MOD,
-        'forall': TokenType.FORALL,
-        'exists': TokenType.EXISTS,
+        'Forall': TokenType.FORALL,
+        'Exists': TokenType.EXISTS,
         'G': TokenType.ALWAYS,
         'F': TokenType.EVENTUALLY,
     }
@@ -804,13 +790,6 @@ class Parser:
         expr = self.parse_expression()
         return expr
     
-    def parse_hltlspec_section(self) -> ASTNode:
-        """Parse HLTLSPEC section."""
-        self.expect(TokenType.HLTLSPEC)
-        qexpr = self.parse_quantified_expression()
-        return qexpr
-
-    
     # ========================================================================
     # Module Parsing
     # ========================================================================
@@ -834,8 +813,6 @@ class Parser:
                 module.trans_expr = self. parse_trans_section()
             elif self.match(TokenType. INVAR):
                 module. invar_expr = self.parse_invar_section()
-            elif self.match(TokenType. HLTLSPEC):
-                module.hltlspec_expr = self.parse_hltlspec_section()
             else:
                 self.error(f"Unexpected token in module:  {self.current()}")
         
@@ -863,319 +840,20 @@ def parse_smv(text: str) -> Module:
     parser = Parser(tokens)
     return parser.parse_module()
 
-# ===========================================================================
-# Translate SMV expressions to Z3 (by Alcino Cunha and CoPilot)
-# ===========================================================================
-
-def smv_temporal_expr_to_z3(K, i, expr: ASTNode, state: dict, loops: dict) -> ExprRef:
-    if isinstance(expr, IntegerLiteral):
-        return IntVal(expr.value)
-    elif isinstance(expr, BooleanLiteral):
-        return BoolVal(expr.value)
-    elif isinstance(expr, Identifier):
-        if expr.trace is not None:
-            loop = loops[expr.trace]
-            lasso = K - loop
-            if i < loop:
-                index = i
-            else:
-                index = loop + ((i - loop) % lasso)
-            return state[expr.trace][index][expr.name]
-        else:
-            raise NotImplementedError("Non projected identifiers not supported in temporal formulas.")
-    elif isinstance(expr, UnaryOp):
-        if expr.operator == '!':
-            operand = smv_temporal_expr_to_z3(K, i, expr.operand, state, loops)
-            return Not(operand)
-        elif expr.operator == '-':
-            operand = smv_temporal_expr_to_z3(K, i, expr.operand, state, loops)
-            return (- operand)
-        elif expr.operator == 'G':
-            lasso = { t: K - loops[t] for t in loops }
-            loop = max(loops.values())
-            length = loop + lcm(*lasso.values())
-            return And([smv_temporal_expr_to_z3(K, j, expr.operand, state, loops) for j in range(min(i,loop), length)])
-        elif expr.operator == 'F':
-            lasso = { t: K - loops[t] for t in loops }
-            loop = max(loops.values())
-            length = loop + lcm(*lasso.values())
-            return Or([smv_temporal_expr_to_z3(K, j, expr.operand, state, loops) for j in range(min(i,loop), length)])     
-    elif isinstance(expr, BinaryOp):
-        left = smv_temporal_expr_to_z3(K, i, expr.left, state, loops)
-        right = smv_temporal_expr_to_z3(K, i, expr.right, state, loops)
-        if expr.operator == '&':
-            return And(left, right)
-        elif expr.operator == '|':
-            return Or(left, right)
-        elif expr.operator == '->':
-            return Implies(left, right)
-        elif expr.operator == '<->':
-            return left == right
-        elif expr.operator == '=':
-            return left == right
-        elif expr.operator == '!=':
-            return left != right
-        elif expr.operator == '<':
-            return left < right
-        elif expr.operator == '<=':
-            return left <= right
-        elif expr.operator == '>':
-            return left > right
-        elif expr.operator == '>=':
-            return left >= right
-        elif expr.operator == '+':
-            return left + right
-        elif expr.operator == '-':
-            return left - right
-        elif expr.operator == '*':
-            return left * right
-        elif expr.operator == '/':
-            return left / right
-        elif expr.operator == 'mod':
-            return left % right
-    elif isinstance(expr, NextExpr):
-        raise NotImplementedError("Next not allowed in temporal formulas.")
+def parse_hyperltl(text: str) -> ASTNode:
+    """
+    Parse a HyperLTL expression and return the corresponding AST node.
     
-    raise NotImplementedError(f"Translation for {expr} not implemented.")
-
-def smv_expr_to_z3(expr: ASTNode, state: dict) -> ExprRef:
-    if isinstance(expr, IntegerLiteral):
-        return IntVal(expr.value)
-    elif isinstance(expr, BooleanLiteral):
-        return BoolVal(expr.value)
-    elif isinstance(expr, Identifier):
-        if expr.trace is not None:
-            raise NotImplementedError("Projected identifiers not supported in state formulas.")
-        return state[expr.name]
-    elif isinstance(expr, UnaryOp):
-        operand = smv_expr_to_z3(expr.operand, state)
-        if expr.operator == '!':
-            return Not(operand)
-        elif expr.operator == '-':
-            return (- operand)
-        elif expr.operator == 'G':
-            raise NotImplementedError("Temporal operator not allowed in state formulas.")
-        elif expr.operator == 'F':
-            raise NotImplementedError("Temporal operator not allowed in state formulas.")
-    elif isinstance(expr, BinaryOp):
-        left = smv_expr_to_z3(expr.left, state)
-        right = smv_expr_to_z3(expr.right, state)
-        if expr.operator == '&':
-            return And(left, right)
-        elif expr.operator == '|':
-            return Or(left, right)
-        elif expr.operator == '->':
-            return Implies(left, right)
-        elif expr.operator == '<->':
-            return left == right
-        elif expr.operator == '=':
-            return left == right
-        elif expr.operator == '!=':
-            return left != right
-        elif expr.operator == '<':
-            return left < right
-        elif expr.operator == '<=':
-            return left <= right
-        elif expr.operator == '>':
-            return left > right
-        elif expr.operator == '>=':
-            return left >= right
-        elif expr.operator == '+':
-            return left + right
-        elif expr.operator == '-':
-            return left - right
-        elif expr.operator == '*':
-            return left * right
-        elif expr.operator == '/':
-            return left / right
-        elif expr.operator == 'mod':
-            return left % right
-    elif isinstance(expr, NextExpr):
-        raise NotImplementedError("Next not allowed in state formulas.")
+    Args:
+        text: The HyperLTL expression as a string.
     
-    raise NotImplementedError(f"Translation for {expr} not implemented.")
+    Returns:
+        An ASTNode representing the parsed HyperLTL expression.
 
-def smv_next_expr_to_z3(expr: ASTNode, state1: dict, state2: dict) -> ExprRef:
-    if isinstance(expr, IntegerLiteral):
-        return IntVal(expr.value)
-    elif isinstance(expr, BooleanLiteral):
-        return BoolVal(expr.value)
-    elif isinstance(expr, Identifier):
-        return state1[expr.name]
-    elif isinstance(expr, UnaryOp):
-        operand = smv_next_expr_to_z3(expr.operand, state1, state2)
-        if expr.operator == '!':
-            return Not(operand)
-        elif expr.operator == '-':
-            return (- operand)
-    elif isinstance(expr, BinaryOp):
-        left = smv_next_expr_to_z3(expr.left, state1, state2)
-        right = smv_next_expr_to_z3(expr.right, state1, state2)
-        if expr.operator == '&':
-            return And(left, right)
-        elif expr.operator == '|':
-            return Or(left, right)
-        elif expr.operator == '->':
-            return Implies(left, right)
-        elif expr.operator == '<->':
-            return left == right
-        elif expr.operator == '=':
-            return left == right
-        elif expr.operator == '!=':
-            return left != right
-        elif expr.operator == '<':
-            return left < right
-        elif expr.operator == '<=':
-            return left <= right
-        elif expr.operator == '>':
-            return left > right
-        elif expr.operator == '>=':
-            return left >= right
-        elif expr.operator == '+':
-            return left + right
-        elif expr.operator == '-':
-            return left - right
-        elif expr.operator == '*':
-            return left * right
-        elif expr.operator == '/':
-            return left / right
-        elif expr.operator == 'mod':
-            return left % right
-    elif isinstance(expr, NextExpr):
-        return state2[expr.expr.name]
-    
-    raise NotImplementedError(f"Translation for {expr} not implemented.")
-
-# ============================================================================
-# BMC procedure for HyperLTL (by Alcino Cunha and CoPilot)
-# ============================================================================
-
-if __name__ == "__main__":
-    # check command line arguments
-    if len(sys.argv) != 3:
-        print("Usage: python HyperLoop.py <model_file.smv> <trace_length>")
-        sys.exit(1)
-    model_file = sys.argv[1]
-    K = int(sys.argv[2])
-    
-    # Read model from file
-    with open(model_file, "r") as f:
-
-        example_model = f.read()
-
-        try:
-            module = parse_smv(example_model)
-            
-            def frozen_vars(name):
-                decls = {}
-                for decl in module.frozenvar_decls:
-                    if decl.var_type.__class__ == RangeType:
-                        decls[decl.name] = Int(f"{name}_{decl.name}")
-                    elif decl.var_type.__class__ == BooleanType:
-                        decls[decl.name] = Bool(f"{name}_{decl.name}")
-                return decls
-            
-            def state_vars(name,i):
-                decls = {}
-                for decl in module.var_decls:
-                    if decl.var_type.__class__ == RangeType:
-                        decls[decl.name] = Int(f"{name}_{i}_{decl.name}")
-                    elif decl.var_type.__class__ == BooleanType:
-                        decls[decl.name] = Bool(f"{name}_{i}_{decl.name}")
-                return decls
-            
-            def init(s):
-                if module.init_expr is None:
-                    return BoolVal(True)
-                return smv_expr_to_z3(module.init_expr, s,)
-            
-            def trans(s1,s2):
-                if module.trans_expr is None:
-                    return BoolVal(True)
-                return smv_next_expr_to_z3(module.trans_expr, s1, s2)
-
-            def invar(s):
-                if module.invar_expr is None:
-                    return BoolVal(True)
-                return smv_expr_to_z3(module.invar_expr, s)
-
-            def behavior(state,loop,init,trans,invar):
-                constraints = [loop >= 0, loop < K, init(state[0])]
-                for decl in module.frozenvar_decls:
-                    if decl.var_type.__class__ == RangeType:
-                        var = state[0][decl.name]
-                        constraints.append(var >= decl.var_type.lower)
-                        constraints.append(var <= decl.var_type.upper)
-                for i in range(K-1):
-                    constraints.append(trans(state[i], state[i+1]))
-                for i in range(K):
-                    constraints.append(Implies(loop == i,trans(state[K-1], state[i])))
-                for i in range(K):
-                    constraints.append(invar(state[i]))
-                for i in range(K):
-                    for decl in module.var_decls:
-                        if decl.var_type.__class__ == RangeType:
-                            var = state[i][decl.name]
-                            constraints.append(var >= decl.var_type.lower)
-                            constraints.append(var <= decl.var_type.upper)
-                return And(constraints)
-            
-            def print_trace(model,state,loop,K):
-                for i in range(K):
-                    print(f"State {i}:")
-                    for var in state[i]:
-                        print(f"  {var} = {model[state[i][var]]}")
-                l = model[loop].as_long()
-                print(f"Loop back to state: {l}")
-
-            s = Solver()
-
-            N = len(module.hltlspec_expr.vars)
-
-            first_exists = N
-            state = {}
-            loop = {}
-            for i,t in enumerate(module.hltlspec_expr.vars):
-                if module.hltlspec_expr.quantifiers[i] == 'exists':
-                    first_exists = min(first_exists, i)
-                frozen = frozen_vars(t)
-                state[t] = [state_vars(t, j) | frozen for j in range(K)]
-                loop[t] = Int(f"loop_{t}")
-
-            for i in range(first_exists):
-                s.add(behavior(state[module.hltlspec_expr.vars[i]], loop[module.hltlspec_expr.vars[i]], init, trans, invar))
-
-            exprs = []
-            for l in itertools.product(range(K), repeat=N):
-                loops = {}
-                for i,t in enumerate(module.hltlspec_expr.vars):
-                    loops[t] = l[i]    
-                lhs = And(loop[t] == loops[t] for t in module.hltlspec_expr.vars)
-                rhs = Not(smv_temporal_expr_to_z3(K, 0, module.hltlspec_expr.expr, state, loops))
-                exprs.append(Implies(lhs, rhs))
-            expr = And(exprs)
-
-            for i in range(N-1, first_exists-1, -1):
-                if module.hltlspec_expr.quantifiers[i] == 'forall':
-                    t = module.hltlspec_expr.vars[i]
-                    form = And(behavior(state[t], loop[t], init, trans, invar), expr)
-                    expr = Exists([loop[t]] + [l for j in range(K) for l in state[t][j].values()], form)
-                else:
-                    t = module.hltlspec_expr.vars[i]
-                    form = Implies(behavior(state[t], loop[t], init, trans, invar), expr)
-                    expr = ForAll([loop[t]] + [l for j in range(K) for l in state[t][j].values()], form)
-            s.add(expr)
-            r = s.check()
-            if r == sat:
-                print(r)
-                print("Counterexample found:")
-                model = s.model()
-                for i in range(first_exists):
-                    print(f"* Trace {module.hltlspec_expr.vars[i]} *")
-                    print_trace(model,state[module.hltlspec_expr.vars[i]],loop[module.hltlspec_expr.vars[i]],K)
-            else:
-                print(r)
-                print("No counterexample found.")
-
-        except SyntaxError as e:
-            print(f"Error: {e}")
+    Raises:
+        SyntaxError: If the input contains invalid syntax.
+    """
+    tokenizer = Tokenizer(text)
+    tokens = tokenizer.tokenize()
+    parser = Parser(tokens)
+    return parser.parse_quantified_expression()
