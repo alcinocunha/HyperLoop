@@ -1,0 +1,4 @@
+MODULE main
+VAR
+    waiting_left : boolean;
+    waiting_right : boolean;

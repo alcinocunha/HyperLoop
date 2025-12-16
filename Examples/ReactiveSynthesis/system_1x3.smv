@@ -1,0 +1,33 @@
+MODULE main
+FROZENVAR
+    from_0 : 0..0;
+    to_0 : 0..0;
+    waiting_0_left : boolean;
+    waiting_0_right : boolean;
+    green_0_left : boolean;
+    green_0_right : boolean;
+    from_1 : 0..0;
+    to_1 : 0..0;
+    waiting_1_left : boolean;
+    waiting_1_right : boolean;
+    green_1_left : boolean;
+    green_1_right : boolean;
+    from_2 : 0..0;
+    to_2 : 0..0;
+    waiting_2_left : boolean;
+    waiting_2_right : boolean;
+    green_2_left : boolean;
+    green_2_right : boolean;
+VAR
+    state : 0..0;
+    waiting_left : boolean;
+    waiting_right : boolean;
+    green_left : boolean;
+    green_right : boolean;
+INIT
+    state = 0
+TRANS
+    state = from_0 & next(state) = to_0 & waiting_0_left = waiting_left & waiting_0_right = waiting_right & green_left = green_0_left & green_right = green_0_right |
+    state = from_1 & next(state) = to_1 & waiting_1_left = waiting_left & waiting_1_right = waiting_right & green_left = green_1_left & green_right = green_1_right |
+    state = from_2 & next(state) = to_2 & waiting_2_left = waiting_left & waiting_2_right = waiting_right & green_left = green_2_left & green_right = green_2_right |
+    (from_0 = state -> (waiting_0_left != waiting_left | waiting_0_right != waiting_right)) & (from_1 = state -> (waiting_1_left != waiting_left | waiting_1_right != waiting_right)) & (from_2 = state -> (waiting_2_left != waiting_left | waiting_2_right != waiting_right)) & !green_left & !green_right & next(state) = state

@@ -45,6 +45,14 @@ def smv_temporal_expr_to_z3(K, i, expr: ASTNode, state: dict, loops: dict) -> Ex
             loop = max(loops.values())
             length = loop + lcm(*lasso.values())
             return Or([smv_temporal_expr_to_z3(K, j, expr.operand, state, loops) for j in range(min(i,loop), length)])     
+        elif expr.operator == 'X':
+            lasso = { t: K - loops[t] for t in loops }
+            loop = max(loops.values())
+            length = loop + lcm(*lasso.values())
+            if i + 1 < length:
+                return smv_temporal_expr_to_z3(K, i + 1, expr.operand, state, loops)
+            else:
+                return smv_temporal_expr_to_z3(K, loop, expr.operand, state, loops)
     elif isinstance(expr, BinaryOp):
         left = smv_temporal_expr_to_z3(K, i, expr.left, state, loops)
         right = smv_temporal_expr_to_z3(K, i, expr.right, state, loops)

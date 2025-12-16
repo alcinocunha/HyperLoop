@@ -271,6 +271,7 @@ class TokenType(Enum):
     # Temporal operators
     ALWAYS = auto()      # G
     EVENTUALLY = auto()  # F
+    AFTER = auto()       # X
 
     # Trace quantifiers
     FORALL = auto()      # Forall
@@ -310,6 +311,7 @@ class Tokenizer:
         'Exists': TokenType.EXISTS,
         'G': TokenType.ALWAYS,
         'F': TokenType.EVENTUALLY,
+        'X': TokenType.AFTER,
     }
     
     def __init__(self, text: str):
@@ -661,6 +663,10 @@ class Parser:
             operand = self.parse_unary()
             return UnaryOp(op, operand)
         if self.match(TokenType.EVENTUALLY):
+            op = self.advance().value
+            operand = self.parse_unary()
+            return UnaryOp(op, operand)
+        if self.match(TokenType.AFTER):
             op = self.advance().value
             operand = self.parse_unary()
             return UnaryOp(op, operand)

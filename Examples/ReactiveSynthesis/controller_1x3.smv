@@ -1,0 +1,25 @@
+MODULE main
+FROZENVAR
+    from_0 : 0..0;
+    to_0 : 0..0;
+    waiting_0_left : boolean;
+    waiting_0_right : boolean;
+    green_0_left : boolean;
+    green_0_right : boolean;
+    from_1 : 0..0;
+    to_1 : 0..0;
+    waiting_1_left : boolean;
+    waiting_1_right : boolean;
+    green_1_left : boolean;
+    green_1_right : boolean;
+    from_2 : 0..0;
+    to_2 : 0..0;
+    waiting_2_left : boolean;
+    waiting_2_right : boolean;
+    green_2_left : boolean;
+    green_2_right : boolean;
+VAR
+INIT
+    (from_0 = from_1 -> (waiting_0_left != waiting_1_left | waiting_0_right != waiting_1_right)) &
+    (from_0 = from_2 -> (waiting_0_left != waiting_2_left | waiting_0_right != waiting_2_right)) &
+    (from_1 = from_2 -> (waiting_1_left != waiting_2_left | waiting_1_right != waiting_2_right))
