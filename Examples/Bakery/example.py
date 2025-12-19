@@ -8,4 +8,4 @@ if __name__ == "__main__":
 
     N = int(sys.argv[1])  # number of processes
 
-    print("Forall A . !(" + " & ".join([f"F (pc_{i}[A] = 4)" for i in range(N)]) + ")")
+    print("Forall A . !(" + " & ".join([f"G (F (pc_{i}[A] = 4))" for i in range(N)]) + ")")

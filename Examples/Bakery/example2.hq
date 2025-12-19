@@ -1,0 +1,1 @@
+Forall A . !(G (F (pc_0[A] = 4)) & G (F (pc_1[A] = 4)))
