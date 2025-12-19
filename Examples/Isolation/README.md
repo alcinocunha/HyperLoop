@@ -14,8 +14,8 @@ Script `equivalence.py` generates a HyperLTL property that can be used to check 
 
 | Property     | Bound | Models | Result   |
 |--------------|-------|--------|---------|
-| `isolation_3x2x2.hq` | 3 | `isolation_rc_3x2x2.smv` `isolation_ser_3x2x2.smv` | &#9745; |
-| `isolation_3x2x2.hq` | 4 | `isolation_rc_3x2x2.smv` `isolation_ser_3x2x2.smv` | &#9746; |
+| `isolation_3x2x2.hq` | 3 | `isolation_rc_3x2x2.smv` `isolation_ser_3x2x2.smv` | UNSAT |
+| `isolation_3x2x2.hq` | 4 | `isolation_rc_3x2x2.smv` `isolation_ser_3x2x2.smv` | SAT |
 | `isolation_3x2x2.hq` | 4 | `isolation_ser_3x2x2.smv` `isolation_rc_3x2x2.smv` | UNSAT |
 | `isolation_assigns_3x2x2.hq` | 3 | `isolation_rc_assigns_3x2x2.smv` `isolation_ser_assigns_3x2x2.smv` | UNSAT |
 | `isolation_assigns_3x2x2.hq` | 4 | `isolation_rc_assigns_3x2x2.smv` `isolation_ser_assigns_3x2x2.smv` | SAT |
